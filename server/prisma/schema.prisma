@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(uuid()) @db.Uuid
+  email          String    @unique
+  name           String
+  username       String    @unique
+  bio            String?
+  followerCount  Int       @default(0)
+  followingCount Int       @default(0)
+  postCount      Int       @default(0)
+  password       String
+  avatar         String    @default("default.jpg")
+  commentAuthor  Comment[] @relation("commentAuthor")
+  commentTo      Comment[] @relation("commentTo")
+  follower       Follow[]  @relation("follower")
+  following      Follow[]  @relation("following")
+  Like           Like[]
+  posts          Post[]    @relation("postAuthor")
+}
+
+model Follow {
+  id          String   @id @default(uuid()) @db.Uuid
+  createdAt   DateTime @default(now())
+  followingId String   @db.Uuid
+  followerId  String   @db.Uuid
+  follower    User     @relation("follower", fields: [followerId], references: [id])
+  following   User     @relation("following", fields: [followingId], references: [id])
+}
+
+model Post {
+  id           String    @id @default(uuid()) @db.Uuid
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  authorId     String    @db.Uuid
+  caption      String
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+  image        String
+  author       User      @relation("postAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  comment      Comment[]
+  Like         Like[]
+}
+
+model Comment {
+  id              String   @id @default(uuid()) @db.Uuid
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  authorId        String   @db.Uuid
+  postId          String   @db.Uuid
+  content         String
+  likeCount       Int      @default(0)
+  commentToUserId String?
+  author          User     @relation("commentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  commentTo       User?    @relation("commentTo", fields: [commentToUserId], references: [username], onDelete: Cascade)
+  post            Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  Like            Like[]
+}
+
+model Like {
+  id        String   @id @default(uuid()) @db.Uuid
+  createdAt DateTime @default(now())
+  userId    String   @db.Uuid
+  postId    String   @db.Uuid
+  commentId String?  @db.Uuid
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
